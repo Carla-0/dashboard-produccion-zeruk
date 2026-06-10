@@ -44,9 +44,56 @@ TIPO_VENTA_SQL = (
     "THEN 'Up/Cross-selling' ELSE DashbordLkTipoVenta END"
 )
 
+# ------------------------------------------------------------------ #
+# Normalización de valores
+# Para unificar variantes, agregar entradas a los diccionarios ALIAS:
+#   "Nombre canónico": ("variante 1", "variante 2", ...)
+# La comparación ignora mayúsculas/minúsculas y espacios al borde.
+# ------------------------------------------------------------------ #
+PRODUCER_ALIAS = {
+    "RIERA RIOS MIGUEL WALTER": (
+        "WALTER MIGUEL RIERA RIOS",
+        "RIERA RIOS WALTER",
+    ),
+}
+
+ASEGURADORA_ALIAS = {
+    "Pacifico": (
+        "pacifico",
+        "Pacifico Seguros",
+        "Pacífico",
+        "Pacífico Seguros",
+    ),
+}
+
+
+def sql_normalizacion(columna, alias_dict, valor_vacio=None):
+    """Genera un CASE SQL que unifica variantes y opcionalmente
+    reemplaza valores vacíos por un texto dado."""
+    casos = []
+    if valor_vacio:
+        vv = valor_vacio.replace("'", "''")
+        casos.append(f"WHEN TRIM({columna}) = '' THEN '{vv}'")
+    for canonico, variantes in alias_dict.items():
+        todas = ", ".join(
+            "'" + v.upper().replace("'", "''") + "'"
+            for v in (canonico,) + tuple(variantes)
+        )
+        canon = canonico.replace("'", "''")
+        casos.append(f"WHEN UPPER(TRIM({columna})) IN ({todas}) THEN '{canon}'")
+    return "CASE " + " ".join(casos) + f" ELSE {columna} END"
+
+
+PRODUCER_SQL = sql_normalizacion(
+    "DashbordLkProducer", PRODUCER_ALIAS, valor_vacio="Cartera Zeruk"
+)
+ASEGURADORA_SQL = sql_normalizacion(
+    "DashbordLkAseguradora", ASEGURADORA_ALIAS
+)
+
 DIMENSIONES = {
-    "aseguradora": "DashbordLkAseguradora",
-    "producer": "DashbordLkProducer",
+    "aseguradora": ASEGURADORA_SQL,
+    "producer": PRODUCER_SQL,
     "ramo": "DashbordLkRamo",
     "razon_social": "DashbordLkRazonSocial",
     "tipo_venta": TIPO_VENTA_SQL,
@@ -127,8 +174,8 @@ def construir_filtros(args, desde, hasta):
     where = ["DashbordLkInicioVigencia BETWEEN %s AND %s"]
     params = [desde, hasta]
     mapeo = {
-        "aseguradora": "DashbordLkAseguradora",
-        "producer": "DashbordLkProducer",
+        "aseguradora": ASEGURADORA_SQL,
+        "producer": PRODUCER_SQL,
         "ramo": "DashbordLkRamo",
         "tipo_venta": TIPO_VENTA_SQL,
         "razon_social": "DashbordLkRazonSocial",
@@ -163,8 +210,8 @@ def dashboard():
 def api_filtros():
     """Valores distintos para poblar los selectores."""
     consultas = {
-        "aseguradoras": "DashbordLkAseguradora",
-        "producers": "DashbordLkProducer",
+        "aseguradoras": ASEGURADORA_SQL,
+        "producers": PRODUCER_SQL,
         "ramos": "DashbordLkRamo",
         "tipos_venta": TIPO_VENTA_SQL,
     }
