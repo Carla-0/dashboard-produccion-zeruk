@@ -400,10 +400,10 @@ function pintarResumen(){
 }
 
 const DEF_KPIS = [
-  { clave:"fee_neto_usd",          etiqueta:"Fee Neto USD",          fmt:fmtUSD },
   { clave:"prima_neta_usd",        etiqueta:"Prima Neta USD",        fmt:fmtUSD0 },
   { clave:"comision_zyra_usd",     etiqueta:"Comisión Zyra USD",     fmt:fmtUSD0 },
   { clave:"comision_producer_usd", etiqueta:"Comisión Producer USD", fmt:fmtUSD0 },
+  { clave:"fee_neto_usd",          etiqueta:"Fee Neto USD",          fmt:fmtUSD },
   { clave:"cantidad",              etiqueta:"Cantidad",              fmt:{ format:(v)=>fmtInt.format(v) } },
 ];
 
