@@ -55,6 +55,22 @@ PRODUCER_ALIAS = {
         "WALTER MIGUEL RIERA RIOS",
         "RIERA RIOS WALTER",
     ),
+    "LOPEZ MENDOZA GABRIELA TANIA": (
+        "TANIA GABRIELA LOPEZ MENDOZA",
+    ),
+    "YNZA CHAMOCHUMBI MIGUEL": (
+        "MIGUEL YNZA CHAMOCHUMBI",
+    ),
+    "MERTZ BRAVO LOURDES JANET": (
+        "LOURDES JANET MERTZ BRAVO",
+        "MERTZ BRAVO JANET LOURDES",
+    ),
+    "SIFUENTES VINATEA GINO ROLANDO": (
+        "ROLANDO GINO SIFUENTES VINATEA",
+    ),
+    "YNZA CAMINO MAURICIO": (
+        "MAURICIO YNZA CAMINO",
+    ),
 }
 
 ASEGURADORA_ALIAS = {
@@ -69,18 +85,20 @@ ASEGURADORA_ALIAS = {
 
 def sql_normalizacion(columna, alias_dict, valor_vacio=None):
     """Genera un CASE SQL que unifica variantes y opcionalmente
-    reemplaza valores vacíos por un texto dado."""
+    reemplaza valores vacíos por un texto dado. La comparación ignora
+    mayúsculas/minúsculas y TODOS los espacios (cubre dobles espacios)."""
     casos = []
     if valor_vacio:
         vv = valor_vacio.replace("'", "''")
         casos.append(f"WHEN TRIM({columna}) = '' THEN '{vv}'")
+    expr = f"UPPER(REPLACE({columna}, ' ', ''))"
     for canonico, variantes in alias_dict.items():
         todas = ", ".join(
-            "'" + v.upper().replace("'", "''") + "'"
+            "'" + v.upper().replace(" ", "").replace("'", "''") + "'"
             for v in (canonico,) + tuple(variantes)
         )
         canon = canonico.replace("'", "''")
-        casos.append(f"WHEN UPPER(TRIM({columna})) IN ({todas}) THEN '{canon}'")
+        casos.append(f"WHEN {expr} IN ({todas}) THEN '{canon}'")
     return "CASE " + " ".join(casos) + f" ELSE {columna} END"
 
 
